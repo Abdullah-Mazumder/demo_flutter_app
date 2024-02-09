@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:demo/render_html.dart';
-import 'package:demo/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class Surah extends StatefulWidget {
-  const Surah({super.key});
+  const Surah({Key? key}) : super(key: key);
 
   @override
   State<Surah> createState() => _SurahState();
@@ -23,15 +22,6 @@ class _SurahState extends State<Surah> {
   void initState() {
     super.initState();
     loadJsonData();
-
-    // Timer(Duration(seconds: 10), () {
-    // itemScrollController.scrollTo(
-    //     index: 100,
-    //     duration: Duration(milliseconds: 500),
-    //     curve: Curves.ease);
-
-    // itemScrollController.jumpTo(index: 100);
-    // });
   }
 
   Future<void> loadJsonData() async {
@@ -87,13 +77,84 @@ class _SurahState extends State<Surah> {
                       AyahModel ayah = dataList[index];
                       var htmlVerse = ayah.verseHtml;
 
-                      return RenderHtml(html: htmlVerse);
+                      return WebviewScaffold(
+                        url: 'about:blank',
+                        withZoom: false,
+                        withLocalStorage: true,
+                        hidden: true,
+                        initialChild: Container(
+                          color: Colors.white,
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                        appBar: AppBar(
+                          title: Text("Verse ${ayah.verseId}"),
+                        ),
+                        initialChild: Container(
+                          color: Colors.white,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                        javascriptChannels: <JavascriptChannel>{
+                          _toasterJavascriptChannel(context),
+                        },
+                        userAgent: 'Flutter',
+                        withJavascript: true,
+                        withLocalUrl: true,
+                        allowFileURLs: true,
+                        withZoom: false,
+                        hidden: true,
+                        initialChild: Container(
+                          color: Colors.white,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                        bottomNavigationBar: BottomAppBar(
+                          child: Row(
+                            children: <Widget>[
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back_ios),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                              ),
+                              const Spacer(),
+                              IconButton(
+                                icon: const Icon(Icons.refresh),
+                                onPressed: () {
+                                  _webViewController.reload();
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.arrow_forward_ios),
+                                onPressed: () {
+                                  _webViewController.goForward();
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
                     },
                     itemCount: dataList.length,
                   ),
                 ),
               ],
             ),
+    );
+  }
+
+  JavascriptChannel _toasterJavascriptChannel(BuildContext context) {
+    return JavascriptChannel(
+      name: 'Toaster',
+      onMessageReceived: (JavascriptMessage message) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message.message)),
+        );
+      },
     );
   }
 }
